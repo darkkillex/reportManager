@@ -4,8 +4,8 @@ import constants
 
 #("Momento", "Appaltatore", "Tipologia", "Targa", "Sito di giacenza", "Stato")
 
-dict_adr_sheet = {}
-dict_not_adr_sheet = {}
+adr_sheet = {}
+not_adr_sheet = {}
 
 
 def create_data_struct(df):
@@ -20,16 +20,17 @@ def create_data_struct(df):
 
     # Accorcia il contenuto della prima colonna a 25 caratteri
     df['Appaltatore-'] = df['Appaltatore-'].str.slice(0, 25)
+    return df
 
 
 def populate_sheets(df):
-    for group, dati_gruppo in df.groupby('Appaltatore-'):
-        temp_adr = dati_gruppo[dati_gruppo['Tipologia'].str.contains('ADR', case=False, na=False)]
-        temp_not_adr = dati_gruppo[~dati_gruppo['Tipologia'].str.contains('ADR', case=False, na=False)]
+    for group, group_data in df.groupby('Appaltatore-'):
+        temp_adr = group_data[group_data['Tipologia'].str.contains('ADR', case=False, na=False)]
+        temp_not_adr = group_data[~group_data['Tipologia'].str.contains('ADR', case=False, na=False)]
         if not temp_adr.empty:
-             dict_adr_sheet[group] = temp_adr
+             adr_sheet[group] = temp_adr
         if not temp_not_adr.empty:
-             dict_not_adr_sheet[group] = temp_not_adr
+             not_adr_sheet[group] = temp_not_adr
 
 
 
