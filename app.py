@@ -1,4 +1,3 @@
-
 import pandas as pd
 from openpyxl import Workbook
 from openpyxl.styles import Font
@@ -8,8 +7,7 @@ import constants
 import inOut
 
 
-wb_adr, wb_not_adr = Workbook()
-
+wb_adr, wb_not_adr = Workbook(), Workbook()
 
 
 def load_xlsx_file(file_excel):
@@ -37,35 +35,22 @@ def write_on_xlsx_sheet_file(wb, sheets):
         for cell in sheet['2']:
             cell.font = Font(bold=True)
 
-
-#TODO: review this parto of code
-
-def create_IN_OUT_report(wb, sheets):
-    # Scrivi i dati su fogli separati nei due file Excel
-    write_on_xlsx_sheet_file(wb_adr, fogli_con_adr)
-    write_on_xlsx_sheet_file(wb_not_adr, fogli_senza_adr)
-
-    # Rimuovi il foglio di lavoro predefinito "Sheet" da entrambi i file
-    wb_adr.remove(wb_adr['Sheet'])
-    wb_not_adr.remove(wb_not_adr['Sheet'])
-
-    # Salva i due nuovi file Excel
-    wb_adr.save('C:/Users/Maersk/Desktop/testpy/INOUT_ADR.xlsx')
-    wb_not_adr.save('C:/Users/Maersk/Desktop/testpy/INOUT_NON_ADR.xlsx')
-
-#------------------------------------------------------------------------------
-
-# let's go work on In_OUT DFs
-df_1 = load_xlsx_file(constants.IN_OUT)
-df_final = clean_df(df_1)
-
-df = inOut.create_data_struct(df_final)
-df = inOut.populate_sheets(df)
+def create_IN_OUT_report(wb, sheet, label):
+    write_on_xlsx_sheet_file(wb, sheet)
+    wb.remove(wb['Sheet'])
+    wb.save(label)
 
 
-
+def run_scripts():
+    # let's go work on In_OUT DFs
+    df_1 = load_xlsx_file(constants.IN_OUT)
+    df_final = clean_df(df_1)
+    df = inOut.create_data_struct(df_final)
+    df = inOut.populate_sheets(df)
+    create_IN_OUT_report(wb_adr, inOut.adr_sheet, "assets/IN_OUT_ADR.xlsx")
+    create_IN_OUT_report(wb_not_adr, inOut.not_adr_sheet, "assets/IN_OUT_NON_ADR.xlsx")
 
 
 if __name__ == '__main__':
-    print(df)
+    run_scripts()
 
