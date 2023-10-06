@@ -17,13 +17,13 @@ def load_xlsx_file(file_excel):
         df = pd.read_excel(file_excel)
         # Operazioni sul dataframe df qui
     except FileNotFoundError:
-        print("Il file Excel non è stato trovato.")
+        print("File Excel not found.")
     except pd.errors.EmptyDataError:
-        print("Il file Excel è vuoto o non contiene dati.")
+        print("The File Excel is empty.")
     except pd.errors.ParserError:
-        print("Errore durante la lettura del file Excel. Assicurati che il formato sia corretto.")
+        print("Error reading Excel file. Make sure the format is correct.")
     except Exception as e:
-        print(f"Si è verificato un errore sconosciuto: {str(e)}")
+        print(f"An unknown error has occurred: {str(e)}")
     return df
 
 
