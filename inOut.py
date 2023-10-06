@@ -14,17 +14,17 @@ def create_data_struct(df):
     df['Momento'] = df['Appaltatore']  # Sovrascrive i dati di Colonna1 con quelli di Colonna2
     df['Appaltatore'] = df_temp  # Sovrascrive i dati di Colonna2 con quelli dalla variabile temporanea
 
-    df = df.rename(columns={'Momento': 'Appaltatore-'})
+    df = df.rename(columns={'Momento': 'Azienda Appaltatrice'})
     df = df.rename(columns={'Appaltatore': 'Momento'})
 
 
-    # Accorcia il contenuto della prima colonna a 25 caratteri
-    df['Appaltatore-'] = df['Appaltatore-'].str.slice(0, 25)
+    # cuts the number of characters in the excel sheet label (max 31 char supported)
+    df['Azienda Appaltatrice'] = df['Azienda Appaltatrice'].str.slice(0, 31)
     return df
 
 
 def populate_sheets(df):
-    for group, group_data in df.groupby('Appaltatore-'):
+    for group, group_data in df.groupby('Azienda Appaltatrice'):
         temp_adr = group_data[group_data['Tipologia'].str.contains('ADR', case=False, na=False)]
         temp_not_adr = group_data[~group_data['Tipologia'].str.contains('ADR', case=False, na=False)]
         if not temp_adr.empty:
