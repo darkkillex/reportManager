@@ -1,2 +1,2 @@
-IN_OUT="C:\Users\Public\Documents\Excel.xlsx"
-VOB_POB="C:\Users\Public\Documents\VOB.xlsx"
+IN_OUT='assets/Excel.xlsx'
+VOB_POB='assets/VOB.xlsx'
