@@ -50,45 +50,40 @@ def write_on_xlsx_sheet_file(wb, sheets):
 def create_IN_OUT_report(wb, sheet, label):
     write_on_xlsx_sheet_file(wb, sheet)
     wb.remove(wb['Sheet'])
+    for sheet_name in wb.sheetnames:
+        sheet = wb[sheet_name]
+
+        # Elimina la prima riga (Header)
+        sheet.delete_rows(1)
+
+        # Imposta i filtri per tutte le colonne
+        sheet.auto_filter.ref = sheet.dimensions
+        sheet.freeze_panes = 'A2'
     wb.save(label)
 
 
-# TODO get the common date to add to label of report Excel
-def generate_report_date(df):
-    # Estrai la prima colonna contenente le date come stringhe
-    date_column = df.iloc[:, 0]
+def generate_IN_OUT_report_label(df, label):
+    # Extract the first column containing the dates as strings
+    if not df.empty:
+        cell_value = df.iloc[1, 1] # get the date from
+        date_parts = cell_value.split(' ')
+        date_string = date_parts[0]
+        # Replace the symbol "/" with "-"
+        date_string = date_string.replace('/', '-') # now we have the date
+        report_label = "assets/" + label + date_string + ".xlsx"
 
-    # Inizializza una lista vuota per conservare le date valide
-    date_objects = []
-
-    # Converte le stringhe in oggetti datetime, gestendo gli errori
-    for date_string in date_column:
-        try:
-            date_time_obj = datetime.strptime(date_string, "%d/%m/%Y")
-            date_objects.append(date_time_obj)
-        except ValueError:
-            # Se la conversione va in errore, puoi decidere come gestire la data non valida
-            # In questo esempio, semplicemente aggiungiamo None alla lista
-            date_objects.append(None)
-
-    # Conta le occorrenze di ciascuna data
-    date_counts = date_column.value_counts()
-    # Trova la data con il conteggio massimo (data comune)
-    common_date = date_counts.idxmax()
-    return common_date
+    return report_label
 
 
 def run_scripts():
     # let's go work on In_OUT DFs
     df_1 = load_xlsx_file(constants.IN_OUT)
     if df_1 is not None:
-        print(df_1)
-        print(generate_report_date(df_1))
         df_final = clean_df(df_1)
-        df = inOut.create_data_struct(df_final)
-        df = inOut.populate_sheets(df)
-        create_IN_OUT_report(wb_adr, inOut.adr_sheet, "assets/IN_OUT_ADR.xlsx")
-        create_IN_OUT_report(wb_not_adr, inOut.not_adr_sheet, "assets/IN_OUT_NON_ADR.xlsx")
+        df = inOut.create_df_data_struct(df_final)
+        inOut.populate_sheets(df)
+        create_IN_OUT_report(wb_adr, inOut.adr_sheet, generate_IN_OUT_report_label(df, constants.LABEL_REPORT_IN_OUT_ADR))
+        create_IN_OUT_report(wb_not_adr, inOut.not_adr_sheet, generate_IN_OUT_report_label(df, constants.LABEL_REPORT_IN_OUT_NOT_ADR))
 
 
 if __name__ == '__main__':

@@ -8,7 +8,7 @@ adr_sheet = {}
 not_adr_sheet = {}
 
 
-def create_data_struct(df):
+def create_df_data_struct(df):
     #switch data between col1 and col2
     df_temp = df['Momento'].copy()  # Copia i dati di Colonna1 in una variabile temporanea
     df['Momento'] = df['Appaltatore']  # Sovrascrive i dati di Colonna1 con quelli di Colonna2
