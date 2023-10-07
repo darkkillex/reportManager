@@ -38,6 +38,7 @@ def clean_df(df):
     df = df.reset_index(drop=True)
     return df
 
+
 def write_on_xlsx_sheet_file(wb, sheets):
     for group_name, group_data in sheets.items():
         sheet = wb.create_sheet(title=group_name)
@@ -79,7 +80,7 @@ def generate_report_label(df, label):
 
 
 def run_scripts():
-    # let's go work on In_OUT DFs
+    # let's go work on DFs
     df_in_out = load_xlsx_file(constants.IN_OUT)
     df_vob_pob = load_xlsx_file(constants.VOB_POB)
 
@@ -95,14 +96,18 @@ def run_scripts():
         df_final_vob_pob = clean_df(df_vob_pob)
         df_ultimate_vob_pob = utilities.create_df_data_struct(df_final_vob_pob, type_of_report=constants.REPORT_VOB_POB)
         utilities.populate_sheets(df_ultimate_vob_pob, adr_sheet_vob_pob, not_adr_sheet_vob_pob)
-        print(df_ultimate_vob_pob.head())
-        create_report(wb_adr_vob_pob, adr_sheet_vob_pob, generate_report_label(df_ultimate_vob_pob,
+        #print(df_ultimate_vob_pob.head())
+        create_report(wb_adr_vob_pob, adr_sheet_vob_pob, generate_report_label(df_ultimate_in_out,#in this case we get the df_in_out to get the right date of extraction
                                                                                constants.LABEL_REPORT_VOB_POB_ADR))
-        create_report(wb_not_adr_vob_pob, not_adr_sheet_vob_pob, generate_report_label(df_ultimate_vob_pob,
+        create_report(wb_not_adr_vob_pob, not_adr_sheet_vob_pob, generate_report_label(df_ultimate_in_out,#in this case we get the df_in_out to get the right date of extraction
                                                                                        constants.LABEL_REPORT_VOB_POB_NOT_ADR))
 
 
 if __name__ == '__main__':
-    run_scripts()
-    print("IN_OUT_ADR.xlsx and IN_OUT_NON_ADR.xlsx has been generated!")
+    try:
+        run_scripts()
+    except Exception as e:
+        print(f"Si è verificato un errore: {str(e)}")
+    else:
+        print("IN_OUT and VOB reports have been generated in the /assets folder!")
 
