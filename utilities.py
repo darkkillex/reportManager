@@ -1,33 +1,28 @@
+import pandas as pd
 import constants
 
 
-
-def create_df_data_struct(df, type_of_report):
-    if type_of_report == "IN_OUT":
-        #switch data between col1 and col2
-        temp_IN_OUT = df['Momento'].copy()  # Copia i dati di Colonna1 in una variabile temporanea
-        df['Momento'] = df['Appaltatore']  # Sovrascrive i dati di Colonna1 con quelli di Colonna2
-        df['Appaltatore'] = temp_IN_OUT  # Sovrascrive i dati di Colonna2 con quelli dalla variabile temporanea
-        df = df.rename(columns={'Momento': 'Azienda Appaltatrice'})
-        df = df.rename(columns={'Appaltatore': 'Momento'})
-    if type_of_report == "VOB_POB":
-        df = df[constants.LIST_OF_LABELS_VOB_POB]
-        df = df.rename(columns={'Appaltatore': 'Azienda Appaltatrice'})
-
-
-    # cuts the number of characters in the excel sheet label (max 31 char supported)
-    df['Azienda Appaltatrice'] = df['Azienda Appaltatrice'].str.slice(0, 31)
+def load_xlsx_file(file_excel):
+    df = None
+    try:
+        df = pd.read_excel(file_excel)
+        # Operazioni sul dataframe df qui
+    except FileNotFoundError:
+        print("File Excel not found.")
+    except pd.errors.EmptyDataError:
+        print("The File Excel is empty.")
+    except pd.errors.ParserError:
+        print("Error reading Excel file. Make sure the format is correct.")
+    except Exception as e:
+        print(f"An unknown error has occurred: {str(e)}")
     return df
 
 
-def populate_sheets(df, adr_sheet, not_adr_sheet):
-    for group, group_data in df.groupby('Azienda Appaltatrice'):
-        temp_adr = group_data[group_data['Tipologia'].str.contains('ADR', case=False, na=False)]
-        temp_not_adr = group_data[~group_data['Tipologia'].str.contains('ADR', case=False, na=False)]
-        if not temp_adr.empty:
-             adr_sheet[group] = temp_adr
-        if not temp_not_adr.empty:
-             not_adr_sheet[group] = temp_not_adr
+def clean_df(df):
+    df.columns = df.iloc[0] # Set the 2nd row as of columns label of df
+    df = df.iloc[1:] # delete the 1st useless row of xlsx
+    df = df.reset_index(drop=True)
+    return df
 
 
 

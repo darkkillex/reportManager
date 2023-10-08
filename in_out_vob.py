@@ -1,6 +1,3 @@
-import pandas as pd
-from datetime import datetime
-import logging
 from openpyxl import Workbook
 from openpyxl.styles import Font
 from openpyxl.utils.dataframe import dataframe_to_rows
@@ -14,29 +11,6 @@ adr_sheet_in_out = {}
 not_adr_sheet_in_out = {}
 adr_sheet_vob_pob = {}
 not_adr_sheet_vob_pob = {}
-
-
-def load_xlsx_file(file_excel):
-    df = None
-    try:
-        df = pd.read_excel(file_excel)
-        # Operazioni sul dataframe df qui
-    except FileNotFoundError:
-        print("File Excel not found.")
-    except pd.errors.EmptyDataError:
-        print("The File Excel is empty.")
-    except pd.errors.ParserError:
-        print("Error reading Excel file. Make sure the format is correct.")
-    except Exception as e:
-        print(f"An unknown error has occurred: {str(e)}")
-    return df
-
-
-def clean_df(df):
-    df.columns = df.iloc[0] # Set the 2nd row as of columns label of df
-    df = df.iloc[1:] # delete the 1st useless row of xlsx
-    df = df.reset_index(drop=True)
-    return df
 
 
 def write_on_xlsx_sheet_file(wb, sheets):
@@ -79,24 +53,51 @@ def generate_report_label(df, label):
     return report_label
 
 
-def run_scripts():
+def create_df_data_struct_report_in_out_pob(df, type_of_report):
+    if type_of_report == "IN_OUT":
+        #switch data between col1 and col2
+        temp_IN_OUT = df['Momento'].copy()  # Copia i dati di Colonna1 in una variabile temporanea
+        df['Momento'] = df['Appaltatore']  # Sovrascrive i dati di Colonna1 con quelli di Colonna2
+        df['Appaltatore'] = temp_IN_OUT  # Sovrascrive i dati di Colonna2 con quelli dalla variabile temporanea
+        df = df.rename(columns={'Momento': 'Azienda Appaltatrice'})
+        df = df.rename(columns={'Appaltatore': 'Momento'})
+    if type_of_report == "VOB_POB":
+        df = df[constants.LIST_OF_LABELS_VOB_POB]
+        df = df.rename(columns={'Appaltatore': 'Azienda Appaltatrice'})
+
+
+    # cuts the number of characters in the excel sheet label (max 31 char supported)
+    df['Azienda Appaltatrice'] = df['Azienda Appaltatrice'].str.slice(0, 31)
+    return df
+
+
+def populate_sheets(df, adr_sheet, not_adr_sheet):
+    for group, group_data in df.groupby('Azienda Appaltatrice'):
+        temp_adr = group_data[group_data['Tipologia'].str.contains('ADR', case=False, na=False)]
+        temp_not_adr = group_data[~group_data['Tipologia'].str.contains('ADR', case=False, na=False)]
+        if not temp_adr.empty:
+             adr_sheet[group] = temp_adr
+        if not temp_not_adr.empty:
+             not_adr_sheet[group] = temp_not_adr
+
+def run_scripts_report_in_out_pob():
     # let's go work on DFs
     df_in_out = utilities.load_xlsx_file(constants.IN_OUT)
     df_vob_pob = utilities.load_xlsx_file(constants.VOB_POB)
 
     if df_in_out is not None:
-        df_final_in_out = clean_df(df_in_out)
-        df_ultimate_in_out = utilities.create_df_data_struct(df_final_in_out, type_of_report=constants.REPORT_IN_OUT)
-        utilities.populate_sheets(df_ultimate_in_out,adr_sheet_in_out, not_adr_sheet_in_out)
+        df_final_in_out = utilities.clean_df(df_in_out)
+        df_ultimate_in_out = create_df_data_struct_report_in_out_pob(df_final_in_out, type_of_report=constants.REPORT_IN_OUT)
+        populate_sheets(df_ultimate_in_out, adr_sheet_in_out, not_adr_sheet_in_out)
         create_report(wb_adr_in_out, adr_sheet_in_out,
                       generate_report_label(df_ultimate_in_out, constants.LABEL_REPORT_IN_OUT_ADR))
         create_report(wb_not_adr_in_out, not_adr_sheet_in_out, generate_report_label(df_ultimate_in_out,
                                                                                      constants.LABEL_REPORT_IN_OUT_NOT_ADR))
         print("IN_OUT report has been generated in the /assets/in_out_vob folder!")
     if df_vob_pob is not None:
-        df_final_vob_pob = clean_df(df_vob_pob)
-        df_ultimate_vob_pob = utilities.create_df_data_struct(df_final_vob_pob, type_of_report=constants.REPORT_VOB_POB)
-        utilities.populate_sheets(df_ultimate_vob_pob, adr_sheet_vob_pob, not_adr_sheet_vob_pob)
+        df_final_vob_pob = utilities.clean_df(df_vob_pob)
+        df_ultimate_vob_pob = create_df_data_struct_report_in_out_pob(df_final_vob_pob, type_of_report=constants.REPORT_VOB_POB)
+        populate_sheets(df_ultimate_vob_pob, adr_sheet_vob_pob, not_adr_sheet_vob_pob)
         #print(df_ultimate_vob_pob.head())
         create_report(wb_adr_vob_pob, adr_sheet_vob_pob, generate_report_label(df_ultimate_in_out, #in this case we get the df_in_out to get the right date of extraction
                                                                                constants.LABEL_REPORT_VOB_POB_ADR))
