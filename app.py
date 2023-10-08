@@ -1,6 +1,7 @@
 import constants
 import utilities
 import in_out_vob as iov
+import reportPdlCheckPdl as pdlcheck
 
 
 def make_your_choice():
@@ -13,7 +14,10 @@ def make_your_choice():
         choice = input("Please enter you choice: ")
 
         if choice == "1":
-            iov.run_scripts()
+            iov.run_scripts_report_in_out_pob()
+            break
+        elif choice == "2":
+            pdlcheck.run_scripts_report_pdl_check()
             break
         else:
             print("Unavailable choice. Please enter a valid choice")
