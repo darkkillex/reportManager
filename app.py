@@ -14,7 +14,6 @@ def make_your_choice():
 
         if choice == "1":
             iov.run_scripts()
-            print("IN_OUT and VOB reports have been generated in the /assets folder!")
             break
         else:
             print("Unavailable choice. Please enter a valid choice")
