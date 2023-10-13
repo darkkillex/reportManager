@@ -7,7 +7,7 @@ import reportPdlCheckPdl as pdlcheck
 def make_your_choice():
     print("##################################################")
     print("##      Select an option:                        #")
-    print("###      1.Report IN_OUT and VOB               ##")
+    print("###      1.Report IN_OUT and VOB                ##")
     print("##################################################")
 
     while True:
@@ -24,8 +24,6 @@ def make_your_choice():
 
 
 if __name__ == '__main__':
-    try:
-        make_your_choice()
-    except Exception as e:
-        print(f"Si è verificato un errore: {str(e)}")
+    make_your_choice()
+
 

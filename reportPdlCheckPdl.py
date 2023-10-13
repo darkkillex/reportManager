@@ -1,4 +1,5 @@
 import re
+import datetime
 import pandas as pd
 from openpyxl import Workbook
 from openpyxl.styles import Font
@@ -7,10 +8,6 @@ import constants
 import utilities
 
 pd.set_option('display.max_columns', None)
-
-
-wb_pdl_check = Workbook()
-
 
 def create_df_data_struct_report_pdl_check(df):
     df = df[["Macro area", "Tipologia attività", "Esito check"]]
@@ -44,39 +41,98 @@ def find_priority_type(types, priority_list):
 
 
 def create_excel_sheet(prioritized_types, df_original, output_file):
-    # Creare un DataFrame vuoto
-    df_excel = pd.DataFrame()
 
-    # Inserire le tipologie di attività nella prima colonna
-    df_excel['Tipologia attività'] = prioritized_types
+    wb = Workbook()
 
-    # Iterare attraverso le "macro aree" univoche
-    unique_macro_areas = df_original['Macro area'].unique()
+    # Creare fogli Excel separati per ciascuna tipologia di "Esito"
+    for esito in df_original['Esito check'].unique():
+        ws = wb.create_sheet(title=esito)
 
-    for macro_area in unique_macro_areas:
-        # Creare una colonna separata per ogni "macro area"
-        df_excel[macro_area] = ""
+        df_excel = pd.DataFrame()
 
-    # Eseguire il conteggio delle occorrenze
-    counts_df = df_original.groupby(['Macro area', 'Tipologia attività']).size().reset_index(name='Counts')
+        # Filtrare il DataFrame originale per la tipologia di "Esito"
+        df_filtered = df_original[df_original['Esito check'] == esito]
 
-    # Aggiungere i conteggi al DataFrame Excel
-    for index, row in counts_df.iterrows():
-        macro_area = row['Macro area']
-        activity_type = row['Tipologia attività']
-        count = row['Counts']
+        # Inserire le tipologie di attività nella prima colonna
+        df_excel['Tipologia attività'] = prioritized_types
 
-        df_excel.loc[df_excel['Tipologia attività'] == activity_type, macro_area] = count
+        # Iterare attraverso le "macro aree" univoche
+        all_macro_areas = df_original['Macro area'].unique()
+
+        # Inserisci tutte le macro aree come colonne, inizializzate a 0
+        for macro_area in all_macro_areas:
+            df_excel[macro_area] = 0
+
+        # Eseguire il conteggio delle occorrenze
+        counts_df = df_filtered.groupby(['Macro area', 'Tipologia attività']).size().reset_index(name='Counts')
+
+        # Aggiungere i conteggi al DataFrame Excel
+        for index, row in counts_df.iterrows():
+            macro_area = row['Macro area']
+            activity_type = row['Tipologia attività']
+            count = row['Counts']
+
+            # Verifica se c'è una corrispondenza tra "macro area" e "tipologia attività"
+            if macro_area in df_excel.columns and activity_type in df_excel['Tipologia attività'].values:
+                df_excel.loc[df_excel['Tipologia attività'] == activity_type, macro_area] = count
+
+        df_excel = df_excel.replace('', 0)
+        # Calcola e aggiungi la riga con la somma delle colonne (tralasciando la prima colonna)
+        sums = df_excel.iloc[:, 1:].sum()
+        df_sums = pd.DataFrame([['TOTALE'] + sums.tolist()], columns=df_excel.columns)
+        df_excel = pd.concat([df_excel, df_sums], ignore_index=True)
+        for r in dataframe_to_rows(df_excel, index=False, header=True):
+            ws.append(r)
+
+    # Rimuovi il foglio di lavoro predefinito
+    wb.remove(wb.active)
+
+    # Salva il Workbook completo in un file Excel
+    wb.save(output_file)
 
 
-    df_excel = df_excel.replace('', 0)
-    # Calcola e aggiungi la riga con la somma delle colonne (tralasciando la prima colonna)
-    sums = df_excel.iloc[:, 1:].sum()
-    df_sums = pd.DataFrame([['TOTALE'] + sums.tolist()], columns=df_excel.columns)
-    df_excel = pd.concat([df_excel, df_sums], ignore_index=True)
 
-    df_excel.to_excel(output_file, index=False)
-    print(df_excel)
+
+def generate_report_label(df):
+    # Extract the first column containing the dates as strings
+    if not df.empty:
+        today = datetime.date.today()
+        week = today.strftime("%U")  # Numero della settimana
+        year = today.strftime("%Y")  # Anno corrente
+        report_label = "assets/report_pdl_check_pdl/" + constants.LABEL_REPORT_PDL_CHECK + week + "-" + year + ".xlsx"
+
+    return report_label
+
+
+
+
+def write_on_xlsx_sheet_file(wb, sheets):
+    for group_name, group_data in sheets.items():
+        sheet = wb.create_sheet(title=group_name)
+        # adjust the width of the columns
+        for col in range(1, len(group_data.columns) + 1):
+            sheet.column_dimensions[sheet.cell(1, col).column_letter].width = 40
+        # writa the data
+        for row in dataframe_to_rows(group_data, index=False, header=True):
+            sheet.append(row)
+        # Set to Bold the first line
+        for cell in sheet['2']:
+            cell.font = Font(bold=True)
+
+
+def create_report(wb, sheet, label):
+    write_on_xlsx_sheet_file(wb, sheet)
+    for sheet_name in wb.sheetnames:
+        sheet = wb[sheet_name]
+        # Elimina la prima riga (Header)
+        sheet.delete_rows(1)
+        # Imposta i filtri per tutte le colonne
+        sheet.auto_filter.ref = sheet.dimensions
+        sheet.freeze_panes = 'A2'
+    wb.save(label)
+
+
+
 
 
 def run_scripts_report_pdl_check():
@@ -88,9 +144,4 @@ def run_scripts_report_pdl_check():
         apply(replace_comma_specific_part)
     df_ultimate_in_out["Tipologia attività"] = df_ultimate_in_out["Tipologia attività"].\
         apply(lambda x: find_priority_type(x, priority_list=constants.LIST_PRIORITY_PDL_AND_CHECK))
-    create_excel_sheet(constants.LIST_PRIORITY_PDL_AND_CHECK, df_ultimate_in_out, 'assets/report_pdl_check_pdl/reportPdlCheck.xlsx')
-
-
-
-
-    print(df_ultimate_in_out.head())
+    create_excel_sheet(constants.LIST_PRIORITY_PDL_AND_CHECK, df_ultimate_in_out, generate_report_label(df_ultimate_in_out))
