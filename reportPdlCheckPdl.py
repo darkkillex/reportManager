@@ -1,13 +1,14 @@
 import re
 import datetime
 import pandas as pd
-from openpyxl import Workbook
+from openpyxl import Workbook, styles
 from openpyxl.styles import Font
 from openpyxl.utils.dataframe import dataframe_to_rows
 import constants
 import utilities
 
 pd.set_option('display.max_columns', None)
+
 
 def create_df_data_struct_report_pdl_check(df):
     df = df[["Macro area", "Tipologia attività", "Esito check"]]
@@ -40,6 +41,28 @@ def find_priority_type(types, priority_list):
     return priority_type
 
 
+
+def format_excel_sheet(ws):
+    # Imposta la prima riga in grassetto (bloccata)
+    for row in ws.iter_rows(min_row=1, max_row=1):
+        for cell in row:
+            cell.font = styles.Font(bold=True)
+        ws.freeze_panes = ws.cell(row=2, column=1)  # Blocca la prima riga
+        # Imposta i filtri per tutte le colonne
+        ws.auto_filter.ref = ws.dimensions
+    for column in ws.columns:
+        max_length = 0
+        column = [cell for cell in column]
+        for cell in column:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(cell.value)
+            except:
+                pass
+        ws.column_dimensions[column[0].column_letter].width = 20
+
+
+
 def create_excel_sheet(prioritized_types, df_original, output_file):
 
     wb = Workbook()
@@ -47,7 +70,6 @@ def create_excel_sheet(prioritized_types, df_original, output_file):
     # Creare fogli Excel separati per ciascuna tipologia di "Esito"
     for esito in df_original['Esito check'].unique():
         ws = wb.create_sheet(title=esito)
-
         df_excel = pd.DataFrame()
 
         # Filtrare il DataFrame originale per la tipologia di "Esito"
@@ -83,14 +105,13 @@ def create_excel_sheet(prioritized_types, df_original, output_file):
         df_excel = pd.concat([df_excel, df_sums], ignore_index=True)
         for r in dataframe_to_rows(df_excel, index=False, header=True):
             ws.append(r)
+        format_excel_sheet(ws)
 
     # Rimuovi il foglio di lavoro predefinito
     wb.remove(wb.active)
 
     # Salva il Workbook completo in un file Excel
     wb.save(output_file)
-
-
 
 
 def generate_report_label(df):
@@ -102,36 +123,6 @@ def generate_report_label(df):
         report_label = "assets/report_pdl_check_pdl/" + constants.LABEL_REPORT_PDL_CHECK + week + "-" + year + ".xlsx"
 
     return report_label
-
-
-
-
-def write_on_xlsx_sheet_file(wb, sheets):
-    for group_name, group_data in sheets.items():
-        sheet = wb.create_sheet(title=group_name)
-        # adjust the width of the columns
-        for col in range(1, len(group_data.columns) + 1):
-            sheet.column_dimensions[sheet.cell(1, col).column_letter].width = 40
-        # writa the data
-        for row in dataframe_to_rows(group_data, index=False, header=True):
-            sheet.append(row)
-        # Set to Bold the first line
-        for cell in sheet['2']:
-            cell.font = Font(bold=True)
-
-
-def create_report(wb, sheet, label):
-    write_on_xlsx_sheet_file(wb, sheet)
-    for sheet_name in wb.sheetnames:
-        sheet = wb[sheet_name]
-        # Elimina la prima riga (Header)
-        sheet.delete_rows(1)
-        # Imposta i filtri per tutte le colonne
-        sheet.auto_filter.ref = sheet.dimensions
-        sheet.freeze_panes = 'A2'
-    wb.save(label)
-
-
 
 
 
