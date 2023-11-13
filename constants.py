@@ -44,3 +44,38 @@ LIST_PRIORITY_PDL_AND_CHECK = ['Spazi Confinati',
                                'Misurazione',
                                'Supervisione Lavori',
                                'Altro']
+
+ # Palette of 30 fixed colors
+COLOR_PALETTE = [
+    '7EA2AA',  # Misty Blue
+    'BFD3C1',  # Pale Sage
+    'D4E2D4',  # Seafoam Green
+    'AAB9A8',  # Silver Sage
+    'F1EDD0',  # Light Beige
+    'F0E1A1',  # Yellow Beige
+    'F3C969',  # Sand
+    'E7B09E',  # Blush
+    'D9BF77',  # Goldenrod
+    'D4A5A5',  # Coral
+    'F3EFEF',  # Lighter Coral
+    'FFE0DB',  # Lighter Blush
+    'F5BA3A',  # Golden Yellow
+    'FFE882',  # Lighter Golden Yellow
+    'C7D7CD',  # Pale Aqua
+    'E2F0CB',  # Celery
+    'F9EBB2',  # Maize
+    'F5BA3A',  # Golden Yellow
+    'E07A5F',  # Terracotta
+    'FFE0DB',  # Lighter Terracotta
+    '805841',  # Cocoa
+    'E8E3D8',  # Lighter Cocoa
+    '6E6D5E',  # Khaki
+    'BCC386',  # Lighter Khaki
+    '758E4F',  # Olive
+    'AABE9B',  # Olive Green
+    'CADF9E',  # Pistachio
+    'FCFAE1',  # Pale Yellow
+    'F0EAD6',  # Ivory
+    'D4CDC3',  # Taupe
+    'A69E9E',  # Charcoal
+]

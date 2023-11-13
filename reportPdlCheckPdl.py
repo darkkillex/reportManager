@@ -1,8 +1,9 @@
 import re
 import datetime
+import openpyxl
 import pandas as pd
 from openpyxl import Workbook, styles
-from openpyxl.styles import Font, Alignment
+from openpyxl.styles import Font, Alignment, PatternFill
 from openpyxl.utils.dataframe import dataframe_to_rows
 import constants
 import utilities
@@ -47,15 +48,23 @@ def find_priority_type(types, priority_list):
     return priority_type
 
 
-
 def format_excel_sheet(ws):
-    # Imposta la prima riga in grassetto (bloccata)
-    for row in ws.iter_rows(min_row=1, max_row=1):
-        for cell in row:
-            cell.font = styles.Font(bold=True)
+   # Imposta la prima riga in grassetto (bloccata) e colorata con la palette
+    for row_index, row in enumerate(ws.iter_rows(min_row=1, max_row=1), start=1):
+        for col_index, cell in enumerate(row, start=1):
+            cell.font = Font(bold=True)
+            if row_index <= len(constants.COLOR_PALETTE):  # Ensure we have a color in the palette
+                cell.fill = PatternFill(start_color=constants.COLOR_PALETTE[row_index - 1], end_color=constants.COLOR_PALETTE[row_index - 1], fill_type='solid')
+
         ws.freeze_panes = ws.cell(row=2, column=1)  # Blocca la prima riga
-        # Imposta i filtri per tutte le colonne
-        ws.auto_filter.ref = ws.dimensions
+
+    last_row_index = ws.max_row
+    for cell in ws[last_row_index]:
+        cell.font = Font(bold=True)
+    # Imposta i filtri per tutte le colonne
+    ws.auto_filter.ref = ws.dimensions
+
+    # Imposta la larghezza delle colonne in base alla lunghezza massima dei valori
     for column in ws.columns:
         max_length = 0
         column = [cell for cell in column]
@@ -65,11 +74,17 @@ def format_excel_sheet(ws):
                     max_length = len(cell.value)
             except:
                 pass
-        ws.column_dimensions[column[0].column_letter].width = 20
+        ws.column_dimensions[column[0].column_letter].width = max_length + 5  # Add some padding for better visibility
+
+    # Colora ogni riga successiva con un colore diverso dalla palette
+    for row_index, row in enumerate(ws.iter_rows(min_row=2), start=2):
+        color_index = row_index % len(constants.COLOR_PALETTE)  # Use modulo to repeat colors
+        for cell in row:
+            cell.fill = PatternFill(start_color=constants.COLOR_PALETTE[color_index], end_color=constants.COLOR_PALETTE[color_index], fill_type='solid')
+
 
 
 def create_check_sheets(prioritized_types, df_original, wb):
-
     df_original = df_original.sort_values(by=['Macro area'], ascending=True)
     # Creare fogli Excel separati per ciascuna tipologia di "Esito"
     for esito in df_original['Esito check'].unique():
