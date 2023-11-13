@@ -114,7 +114,7 @@ def create_check_sheets(prioritized_types, df_original, wb):
 
 def create_pdl_sheets(prioritized_types, df_original_pdl, wb, sheet_label):
     df_original_pdl = df_original_pdl.sort_values(by=['Macro Area'], ascending=True)
-
+    #df_original_pdl = df_original_pdl.dropna(subset=['Tipologia Attività'])
     ws = wb.create_sheet(title=sheet_label)
     df_excel = pd.DataFrame()
     # Inserire le tipologie di attività nella prima colonna
@@ -150,34 +150,40 @@ def create_pdl_sheets(prioritized_types, df_original_pdl, wb, sheet_label):
     format_excel_sheet(ws)
 
 
-def create_excel_sheet_check_pdl(output_file):
-    wb = Workbook()
-
-    df_pdl_check = utilities.load_xlsx_file(constants.PDL_CHECK)
+def define_report_check_part(source_file, column_name, wb):
+    df_pdl_check = utilities.load_xlsx_file(source_file)
     df_final_pdl_check = utilities.clean_df(df_pdl_check)
+    df_final_pdl_check = df_final_pdl_check.dropna(subset=['Tipologia attività'])
     df_temp_pdl_check = create_df_data_struct_report_pdl_check(df_final_pdl_check)
     df_ultimate_pdl_check = df_temp_pdl_check.copy()
-    df_ultimate_pdl_check['Tipologia attività'] = df_ultimate_pdl_check['Tipologia attività'].\
+    df_ultimate_pdl_check[column_name] = df_ultimate_pdl_check[column_name].\
         apply(replace_comma_specific_part)
-    df_ultimate_pdl_check["Tipologia attività"] = df_ultimate_pdl_check["Tipologia attività"].\
+    df_ultimate_pdl_check[column_name] = df_ultimate_pdl_check[column_name].\
         apply(lambda x: find_priority_type(x, priority_list=constants.LIST_PRIORITY_PDL_AND_CHECK))
     create_check_sheets(constants.LIST_PRIORITY_PDL_AND_CHECK, df_ultimate_pdl_check, wb)
 
-    # Rimuovi il foglio di lavoro predefinito
-    #wb.remove(wb.active)
-    # Salva il Workbook completo in un file Excel
-    #wb.save(output_file)
 
-    df_pdl = utilities.load_xlsx_file(constants.PDL_AUT)
+def define_report_pdl_part(source_file, column_name, wb, sheet_label):
+    df_pdl = utilities.load_xlsx_file(source_file)
     df_final_pdl = utilities.clean_df(df_pdl)
+    df_final_pdl = df_final_pdl.dropna(subset=['Tipologia Attività'])
     df_temp_pdl = create_df_data_struct_report_pdl(df_final_pdl)
     df_ultimate_pdl = df_temp_pdl.copy()
-    df_ultimate_pdl['Tipologia Attività'] = df_ultimate_pdl['Tipologia Attività'].\
+    df_ultimate_pdl[column_name] = df_ultimate_pdl[column_name].\
         apply(replace_comma_specific_part)
-    df_ultimate_pdl["Tipologia Attività"] = df_ultimate_pdl["Tipologia Attività"].\
+    df_ultimate_pdl[column_name] = df_ultimate_pdl[column_name].\
         apply(lambda x: find_priority_type(x, priority_list=constants.LIST_PRIORITY_PDL_AND_CHECK))
-    create_pdl_sheets(constants.LIST_PRIORITY_PDL_AND_CHECK, df_ultimate_pdl, wb, "PDL-Autorizzati")
+    create_pdl_sheets(constants.LIST_PRIORITY_PDL_AND_CHECK, df_ultimate_pdl, wb, sheet_label)
 
+
+def create_excel_output(output_file):
+    wb = Workbook()
+    #Outcome of Check PDL
+    define_report_check_part(constants.PDL_CHECK, 'Tipologia attività', wb)
+    #Outcome of PDL Prot
+    define_report_pdl_part(constants.PDL_PROT, 'Tipologia Attività', wb, "PDL-Protocollati")
+    #Outcome of PDL Aut
+    define_report_pdl_part(constants.PDL_AUT, 'Tipologia Attività', wb, "PDL-Autorizzati")
     # Rimuovi il foglio di lavoro predefinito
     wb.remove(wb.active)
     # Salva il Workbook completo in un file Excel
@@ -196,4 +202,5 @@ def generate_report_label(df):
 
 
 def run_scripts_report_pdl_check():
-    create_excel_sheet_check_pdl("assets/report_pdl_check_pdl/hello-report.xlsx")
+    create_excel_output("assets/report_pdl_check_pdl/Report PDL-Check PDL-Sett.XX-XXXX.xlsx")
+    print("Report PDL/Check PDL has been generated in the /assets/report_pdl_check_pdl")

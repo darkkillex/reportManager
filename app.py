@@ -8,6 +8,7 @@ def make_your_choice():
     print("##################################################")
     print("##      Select an option:                        #")
     print("###      1.Report IN_OUT and VOB                ##")
+    print("###      2.Report PDL/Check PDL                ##")
     print("##################################################")
 
     while True:
