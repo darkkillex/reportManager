@@ -70,6 +70,7 @@ def format_excel_sheet(ws):
 
 def create_check_sheets(prioritized_types, df_original, wb):
 
+    df_original = df_original.sort_values(by=['Macro area'], ascending=True)
     # Creare fogli Excel separati per ciascuna tipologia di "Esito"
     for esito in df_original['Esito check'].unique():
         ws = wb.create_sheet(title=esito)
@@ -111,13 +112,13 @@ def create_check_sheets(prioritized_types, df_original, wb):
         format_excel_sheet(ws)
 
 
-def create_pdl_sheets(prioritized_types, df_original_pdl, wb):
+def create_pdl_sheets(prioritized_types, df_original_pdl, wb, sheet_label):
+    df_original_pdl = df_original_pdl.sort_values(by=['Macro Area'], ascending=True)
 
-    ws = wb.create_sheet(title="PDL_Autorizzati")
+    ws = wb.create_sheet(title=sheet_label)
     df_excel = pd.DataFrame()
     # Inserire le tipologie di attività nella prima colonna
     df_excel['Tipologia Attività'] = prioritized_types
-    print(df_excel)
 
     # Iterare attraverso le "macro aree" univoche
     all_macro_areas = df_original_pdl['Macro Area'].unique()
@@ -175,7 +176,7 @@ def create_excel_sheet_check_pdl(output_file):
         apply(replace_comma_specific_part)
     df_ultimate_pdl["Tipologia Attività"] = df_ultimate_pdl["Tipologia Attività"].\
         apply(lambda x: find_priority_type(x, priority_list=constants.LIST_PRIORITY_PDL_AND_CHECK))
-    create_pdl_sheets(constants.LIST_PRIORITY_PDL_AND_CHECK, df_ultimate_pdl, wb)
+    create_pdl_sheets(constants.LIST_PRIORITY_PDL_AND_CHECK, df_ultimate_pdl, wb, "PDL-Autorizzati")
 
     # Rimuovi il foglio di lavoro predefinito
     wb.remove(wb.active)
