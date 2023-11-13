@@ -2,7 +2,7 @@ import re
 import datetime
 import pandas as pd
 from openpyxl import Workbook, styles
-from openpyxl.styles import Font
+from openpyxl.styles import Font, Alignment
 from openpyxl.utils.dataframe import dataframe_to_rows
 import constants
 import utilities
@@ -12,6 +12,11 @@ pd.set_option('display.max_columns', None)
 
 def create_df_data_struct_report_pdl_check(df):
     df = df[["Macro area", "Tipologia attività", "Esito check"]]
+    return df
+
+
+def create_df_data_struct_report_pdl(df):
+    df = df[["Macro Area", "Tipologia Attività"]]
     return df
 
 
@@ -27,6 +32,7 @@ def replace_comma_specific_part(string):
 
 
 def find_priority_type(types, priority_list):
+    #types = filter(lambda item: item != '', types)
     types = types.split(",")  # Split the types separated by commas into a list
     priority_type = None
 
@@ -62,10 +68,7 @@ def format_excel_sheet(ws):
         ws.column_dimensions[column[0].column_letter].width = 20
 
 
-
-def create_excel_sheet(prioritized_types, df_original, output_file):
-
-    wb = Workbook()
+def create_check_sheets(prioritized_types, df_original, wb):
 
     # Creare fogli Excel separati per ciascuna tipologia di "Esito"
     for esito in df_original['Esito check'].unique():
@@ -107,9 +110,75 @@ def create_excel_sheet(prioritized_types, df_original, output_file):
             ws.append(r)
         format_excel_sheet(ws)
 
+
+def create_pdl_sheets(prioritized_types, df_original_pdl, wb):
+
+    ws = wb.create_sheet(title="PDL_Autorizzati")
+    df_excel = pd.DataFrame()
+    # Inserire le tipologie di attività nella prima colonna
+    df_excel['Tipologia Attività'] = prioritized_types
+    print(df_excel)
+
+    # Iterare attraverso le "macro aree" univoche
+    all_macro_areas = df_original_pdl['Macro Area'].unique()
+
+    # Inserisci tutte le macro aree come colonne, inizializzate a 0
+    for macro_area in all_macro_areas:
+        df_excel[macro_area] = 0
+
+    # Eseguire il conteggio delle occorrenze
+    counts_df = df_original_pdl.groupby(['Macro Area', 'Tipologia Attività']).size().reset_index(name='Counts_pdl')
+
+    # Aggiungere i conteggi al DataFrame Excel
+    for index, row in counts_df.iterrows():
+        macro_area = row['Macro Area']
+        activity_type = row['Tipologia Attività']
+        count = row['Counts_pdl']
+
+        # Verifica se c'è una corrispondenza tra "macro area" e "tipologia attività"
+        if macro_area in df_excel.columns and activity_type in df_excel['Tipologia Attività'].values:
+            df_excel.loc[df_excel['Tipologia Attività'] == activity_type, macro_area] = count
+
+    df_excel = df_excel.replace('', 0)
+    # Calcola e aggiungi la riga con la somma delle colonne (tralasciando la prima colonna)
+    sums = df_excel.iloc[:, 1:].sum()
+    df_sums = pd.DataFrame([['TOTALE'] + sums.tolist()], columns=df_excel.columns)
+    df_excel = pd.concat([df_excel, df_sums], ignore_index=True)
+    for r in dataframe_to_rows(df_excel, index=False, header=True):
+        ws.append(r)
+    format_excel_sheet(ws)
+
+
+def create_excel_sheet_check_pdl(output_file):
+    wb = Workbook()
+
+    df_pdl_check = utilities.load_xlsx_file(constants.PDL_CHECK)
+    df_final_pdl_check = utilities.clean_df(df_pdl_check)
+    df_temp_pdl_check = create_df_data_struct_report_pdl_check(df_final_pdl_check)
+    df_ultimate_pdl_check = df_temp_pdl_check.copy()
+    df_ultimate_pdl_check['Tipologia attività'] = df_ultimate_pdl_check['Tipologia attività'].\
+        apply(replace_comma_specific_part)
+    df_ultimate_pdl_check["Tipologia attività"] = df_ultimate_pdl_check["Tipologia attività"].\
+        apply(lambda x: find_priority_type(x, priority_list=constants.LIST_PRIORITY_PDL_AND_CHECK))
+    create_check_sheets(constants.LIST_PRIORITY_PDL_AND_CHECK, df_ultimate_pdl_check, wb)
+
+    # Rimuovi il foglio di lavoro predefinito
+    #wb.remove(wb.active)
+    # Salva il Workbook completo in un file Excel
+    #wb.save(output_file)
+
+    df_pdl = utilities.load_xlsx_file(constants.PDL_AUT)
+    df_final_pdl = utilities.clean_df(df_pdl)
+    df_temp_pdl = create_df_data_struct_report_pdl(df_final_pdl)
+    df_ultimate_pdl = df_temp_pdl.copy()
+    df_ultimate_pdl['Tipologia Attività'] = df_ultimate_pdl['Tipologia Attività'].\
+        apply(replace_comma_specific_part)
+    df_ultimate_pdl["Tipologia Attività"] = df_ultimate_pdl["Tipologia Attività"].\
+        apply(lambda x: find_priority_type(x, priority_list=constants.LIST_PRIORITY_PDL_AND_CHECK))
+    create_pdl_sheets(constants.LIST_PRIORITY_PDL_AND_CHECK, df_ultimate_pdl, wb)
+
     # Rimuovi il foglio di lavoro predefinito
     wb.remove(wb.active)
-
     # Salva il Workbook completo in un file Excel
     wb.save(output_file)
 
@@ -125,14 +194,5 @@ def generate_report_label(df):
     return report_label
 
 
-
 def run_scripts_report_pdl_check():
-    df_pdl_check = utilities.load_xlsx_file(constants.PDL_CHECK)
-    df_final_pdl_check = utilities.clean_df(df_pdl_check)
-    df_temp_pdl_check = create_df_data_struct_report_pdl_check(df_final_pdl_check)
-    df_ultimate_in_out = df_temp_pdl_check.copy()
-    df_ultimate_in_out['Tipologia attività'] = df_ultimate_in_out['Tipologia attività'].\
-        apply(replace_comma_specific_part)
-    df_ultimate_in_out["Tipologia attività"] = df_ultimate_in_out["Tipologia attività"].\
-        apply(lambda x: find_priority_type(x, priority_list=constants.LIST_PRIORITY_PDL_AND_CHECK))
-    create_excel_sheet(constants.LIST_PRIORITY_PDL_AND_CHECK, df_ultimate_in_out, generate_report_label(df_ultimate_in_out))
+    create_excel_sheet_check_pdl("assets/report_pdl_check_pdl/hello-report.xlsx")

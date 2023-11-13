@@ -1,6 +1,8 @@
 IN_OUT = 'assets/in_out_vob/Excel.xlsx'
 VOB_POB = 'assets/in_out_vob/VOB.xlsx'
 PDL_CHECK = 'assets/report_pdl_check_pdl/Excel.xlsx'
+PDL_PROT = 'assets/report_pdl_check_pdl/pdl-prot.xlsx'
+PDL_AUT = 'assets/report_pdl_check_pdl/pdl-aut.xlsx'
 
 REPORT_IN_OUT = "IN_OUT"
 REPORT_VOB_POB = "VOB_POB"
@@ -30,7 +32,8 @@ LIST_PRIORITY_PDL_AND_CHECK = ['Spazi Confinati',
                                'Campionamenti gas/liquidi/solidi',
                                'Scavi',
                                'Demolizioni',
-                               'Verniciatura/Sabbiatura', 'Costruzioni Edili',
+                               'Verniciatura/Sabbiatura',
+                               'Costruzioni Edili',
                                'Montaggi Meccanici',
                                'Collaudi',
                                'Posa Condotte',
