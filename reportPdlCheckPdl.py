@@ -8,6 +8,10 @@ from openpyxl.utils.dataframe import dataframe_to_rows
 import constants
 import utilities
 
+
+
+list_of_sum = []
+
 pd.set_option('display.max_columns', None)
 
 
@@ -88,7 +92,7 @@ def create_check_sheets(prioritized_types, df_original, wb):
     df_original = df_original.sort_values(by=['Macro area'], ascending=True)
     # Creare fogli Excel separati per ciascuna tipologia di "Esito"
     for esito in df_original['Esito check'].unique():
-        ws = wb.create_sheet(title=esito)
+        ws = wb.create_sheet(title='Check_PDL-' + esito)
         df_excel = pd.DataFrame()
 
         # Filtrare il DataFrame originale per la tipologia di "Esito"
@@ -121,6 +125,7 @@ def create_check_sheets(prioritized_types, df_original, wb):
         # Calcola e aggiungi la riga con la somma delle colonne (tralasciando la prima colonna)
         sums = df_excel.iloc[:, 1:].sum()
         df_sums = pd.DataFrame([['TOTALE'] + sums.tolist()], columns=df_excel.columns)
+        list_of_sum.append(df_sums.iloc[0, 1:].sum())
         df_excel = pd.concat([df_excel, df_sums], ignore_index=True)
         for r in dataframe_to_rows(df_excel, index=False, header=True):
             ws.append(r)
@@ -159,10 +164,37 @@ def create_pdl_sheets(prioritized_types, df_original_pdl, wb, sheet_label):
     # Calcola e aggiungi la riga con la somma delle colonne (tralasciando la prima colonna)
     sums = df_excel.iloc[:, 1:].sum()
     df_sums = pd.DataFrame([['TOTALE'] + sums.tolist()], columns=df_excel.columns)
+    list_of_sum.append(df_sums.iloc[0, 1:].sum())
     df_excel = pd.concat([df_excel, df_sums], ignore_index=True)
     for r in dataframe_to_rows(df_excel, index=False, header=True):
         ws.append(r)
     format_excel_sheet(ws)
+
+
+def define_report_summary_part(wb):
+    # Create a new sheet
+    riepilogo_sheet = wb.create_sheet("Riepilogo")
+    # Calculate the sum of all data in the "TOTALE" row in the PDL sheet
+
+    # Write the sum to the cell in the "Riepilogo" sheet
+
+    riepilogo_sheet['A1'] = "Check PDL Positivi"
+    riepilogo_sheet['A2'] = "Check PDL con Problematiche"
+    riepilogo_sheet['A3'] = "Check PDL Azione Preventiva"
+    riepilogo_sheet['A4'] = "Check PDL Stop Work"
+    riepilogo_sheet['A5'] = "TOTALE CHECK PDL"
+    riepilogo_sheet['B1'] = list_of_sum[0]
+    riepilogo_sheet['B2'] = list_of_sum[1]
+    riepilogo_sheet['B3'] = list_of_sum[2]
+    riepilogo_sheet['B4'] = list_of_sum[3]
+    riepilogo_sheet['B5'] = sum(list_of_sum[:4])
+
+    riepilogo_sheet['A6'] = "N° PDL Protocollati"
+    riepilogo_sheet['A7'] = "N° PDL Autorizzati"
+    riepilogo_sheet['A8'] = "Incidenza"
+    riepilogo_sheet['B6'] = list_of_sum[4]
+    riepilogo_sheet['B7'] = list_of_sum[5]
+    riepilogo_sheet['B8'] = '{:.2%}'.format(list_of_sum[5] / list_of_sum[4])
 
 
 def define_report_check_part(source_file, column_name, wb):
@@ -199,6 +231,7 @@ def create_excel_output(output_file):
     define_report_pdl_part(constants.PDL_PROT, 'Tipologia Attività', wb, "PDL-Protocollati")
     #Outcome of PDL Aut
     define_report_pdl_part(constants.PDL_AUT, 'Tipologia Attività', wb, "PDL-Autorizzati")
+    define_report_summary_part(wb)
     # Rimuovi il foglio di lavoro predefinito
     wb.remove(wb.active)
     # Salva il Workbook completo in un file Excel
