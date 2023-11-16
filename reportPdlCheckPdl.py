@@ -1,14 +1,11 @@
 import re
 import datetime
-import openpyxl
 import pandas as pd
 from openpyxl import Workbook, styles
 from openpyxl.styles import Font, Alignment, PatternFill
 from openpyxl.utils.dataframe import dataframe_to_rows
 import constants
 import utilities
-
-
 
 list_of_sum = []
 
@@ -59,7 +56,6 @@ def format_excel_sheet(ws):
             cell.font = Font(bold=True)
             if row_index <= len(constants.COLOR_PALETTE):  # Ensure we have a color in the palette
                 cell.fill = PatternFill(start_color=constants.COLOR_PALETTE[row_index - 1], end_color=constants.COLOR_PALETTE[row_index - 1], fill_type='solid')
-
         ws.freeze_panes = ws.cell(row=2, column=1)  # Blocca la prima riga
 
     last_row_index = ws.max_row
@@ -73,6 +69,7 @@ def format_excel_sheet(ws):
         max_length = 0
         column = [cell for cell in column]
         for cell in column:
+            cell.alignment = Alignment(horizontal='center', vertical='center') # align all data column to center
             try:
                 if len(str(cell.value)) > max_length:
                     max_length = len(cell.value)
@@ -85,6 +82,7 @@ def format_excel_sheet(ws):
         color_index = row_index % len(constants.COLOR_PALETTE)  # Use modulo to repeat colors
         for cell in row:
             cell.fill = PatternFill(start_color=constants.COLOR_PALETTE[color_index], end_color=constants.COLOR_PALETTE[color_index], fill_type='solid')
+
 
 
 
@@ -173,29 +171,47 @@ def create_pdl_sheets(prioritized_types, df_original_pdl, wb, sheet_label):
 
 def define_report_summary_part(wb):
     # Create a new sheet
-    riepilogo_sheet = wb.create_sheet("Riepilogo")
+    ws = wb.create_sheet(title="Riepilogo")
     # Calculate the sum of all data in the "TOTALE" row in the PDL sheet
 
     # Write the sum to the cell in the "Riepilogo" sheet
+    ws['A1'] = "RIEPILOGO"
+    ws['A2'] = "Check PDL Positivi"
+    ws['A3'] = "Check PDL con Problematiche"
+    ws['A4'] = "Check PDL Azione Preventiva"
+    ws['A5'] = "Check PDL Stop Work"
+    ws['A6'] = "Totale Check PDL"
+    ws['B1'] = "#"
+    ws['B2'] = list_of_sum[0]
+    ws['B3'] = list_of_sum[1]
+    ws['B4'] = list_of_sum[2]
+    ws['B5'] = list_of_sum[3]
+    ws['B6'] = sum(list_of_sum[:4])
 
-    riepilogo_sheet['A1'] = "Check PDL Positivi"
-    riepilogo_sheet['A2'] = "Check PDL con Problematiche"
-    riepilogo_sheet['A3'] = "Check PDL Azione Preventiva"
-    riepilogo_sheet['A4'] = "Check PDL Stop Work"
-    riepilogo_sheet['A5'] = "TOTALE CHECK PDL"
-    riepilogo_sheet['B1'] = list_of_sum[0]
-    riepilogo_sheet['B2'] = list_of_sum[1]
-    riepilogo_sheet['B3'] = list_of_sum[2]
-    riepilogo_sheet['B4'] = list_of_sum[3]
-    riepilogo_sheet['B5'] = sum(list_of_sum[:4])
+    ws['A10'] = "N° PDL Protocollati"
+    ws['A11'] = "N° PDL Autorizzati"
+    ws['A12'] = "Incidenza PDL Autorizzati su Totale PDL"
+    ws['B10'] = list_of_sum[4]
+    ws['B11'] = list_of_sum[5]
+    ws['B12'] = '{:.2%}'.format(list_of_sum[5] / list_of_sum[4])
 
-    riepilogo_sheet['A6'] = "N° PDL Protocollati"
-    riepilogo_sheet['A7'] = "N° PDL Autorizzati"
-    riepilogo_sheet['A8'] = "Incidenza"
-    riepilogo_sheet['B6'] = list_of_sum[4]
-    riepilogo_sheet['B7'] = list_of_sum[5]
-    riepilogo_sheet['B8'] = '{:.2%}'.format(list_of_sum[5] / list_of_sum[4])
+    ws['A16'] = "Incidenza Check PDL su PDL Protocollati:"
+    ws['A17'] = "Incidenza Check PDL su PDL Autorizzati:"
+    ws['B16'] = '{:.2%}'.format(sum(list_of_sum[:4]) / list_of_sum[4])
+    ws['B17'] = '{:.2%}'.format(sum(list_of_sum[:4]) / list_of_sum[5])
+    ws['A16'].font = Font(bold=True)  # Set A1 to bold
+    ws['A17'].font = Font(bold=True)  # Set A1 to bold
+    ws['B16'].font = Font(bold=True)  # Set A1 to bold
+    ws['B17'].font = Font(bold=True)  # Set A1 to bold
 
+     # Set bold for specific cells
+    for cell in ['A1', 'A6', 'A12', 'A16', 'A17', 'B1', 'B6', 'B12', 'B16', 'B17']:
+        ws[cell].font = Font(bold=True)
+
+    utilities.autosize_and_center_columns(ws)
+
+    # Move the sheet to the first position
+    wb.move_sheet(ws, offset=-6)
 
 def define_report_check_part(source_file, column_name, wb):
     df_pdl_check = utilities.load_xlsx_file(source_file)
