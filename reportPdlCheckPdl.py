@@ -7,7 +7,7 @@ from openpyxl.utils.dataframe import dataframe_to_rows
 import constants
 import utilities
 
-list_of_sum = []
+list_of_sum = [0, 0, 0, 0, 0, 0]
 
 pd.set_option('display.max_columns', None)
 
@@ -169,50 +169,6 @@ def create_pdl_sheets(prioritized_types, df_original_pdl, wb, sheet_label):
     format_excel_sheet(ws)
 
 
-def define_report_summary_part(wb):
-    # Create a new sheet
-    ws = wb.create_sheet(title="Riepilogo")
-    # Calculate the sum of all data in the "TOTALE" row in the PDL sheet
-
-    # Write the sum to the cell in the "Riepilogo" sheet
-    ws['A1'] = "RIEPILOGO"
-    ws['A2'] = "Check PDL Positivi"
-    ws['A3'] = "Check PDL con Problematiche"
-    ws['A4'] = "Check PDL Azione Preventiva"
-    ws['A5'] = "Check PDL Stop Work"
-    ws['A6'] = "Totale Check PDL"
-    ws['B1'] = "#"
-    ws['B2'] = list_of_sum[0]
-    ws['B3'] = list_of_sum[1]
-    ws['B4'] = list_of_sum[2]
-    ws['B5'] = list_of_sum[3]
-    ws['B6'] = sum(list_of_sum[:4])
-
-    ws['A10'] = "N° PDL Protocollati"
-    ws['A11'] = "N° PDL Autorizzati"
-    ws['A12'] = "Incidenza PDL Autorizzati su Totale PDL"
-    ws['B10'] = list_of_sum[4]
-    ws['B11'] = list_of_sum[5]
-    ws['B12'] = '{:.2%}'.format(list_of_sum[5] / list_of_sum[4])
-
-    ws['A16'] = "Incidenza Check PDL su PDL Protocollati:"
-    ws['A17'] = "Incidenza Check PDL su PDL Autorizzati:"
-    ws['B16'] = '{:.2%}'.format(sum(list_of_sum[:4]) / list_of_sum[4])
-    ws['B17'] = '{:.2%}'.format(sum(list_of_sum[:4]) / list_of_sum[5])
-    ws['A16'].font = Font(bold=True)  # Set A1 to bold
-    ws['A17'].font = Font(bold=True)  # Set A1 to bold
-    ws['B16'].font = Font(bold=True)  # Set A1 to bold
-    ws['B17'].font = Font(bold=True)  # Set A1 to bold
-
-     # Set bold for specific cells
-    for cell in ['A1', 'A6', 'A12', 'A16', 'A17', 'B1', 'B6', 'B12', 'B16', 'B17']:
-        ws[cell].font = Font(bold=True)
-
-    utilities.autosize_and_center_columns(ws)
-
-    # Move the sheet to the first position
-    wb.move_sheet(ws, offset=-6)
-
 def define_report_check_part(source_file, column_name, wb):
     df_pdl_check = utilities.load_xlsx_file(source_file)
     df_final_pdl_check = utilities.clean_df(df_pdl_check)
@@ -239,6 +195,60 @@ def define_report_pdl_part(source_file, column_name, wb, sheet_label):
     create_pdl_sheets(constants.LIST_PRIORITY_PDL_AND_CHECK, df_ultimate_pdl, wb, sheet_label)
 
 
+def define_report_summary_part(wb):
+    # Create a new sheet
+    ws = wb.create_sheet(title="Riepilogo")
+    # Calculate the sum of all data in the "TOTALE" row in the PDL sheet
+
+    # Write the sum to the cell in the "Riepilogo" sheet
+    ws['A1'] = "RIEPILOGO"
+    ws['A2'] = "Check PDL Positivi"
+    ws['A3'] = "Check PDL con Problematiche"
+    ws['A4'] = "Check PDL Azione Preventiva"
+    ws['A5'] = "Check PDL Stop Work"
+    ws['A6'] = "Totale Check PDL"
+    ws['B1'] = "#"
+    ws['B2'] = list_of_sum[0]
+    ws['B3'] = list_of_sum[1]
+    ws['B4'] = list_of_sum[2]
+    ws['B5'] = list_of_sum[3]
+    ws['B6'] = sum(list_of_sum[:4])
+
+    ws['A10'] = "N° PDL Protocollati"
+    ws['A11'] = "N° PDL Autorizzati"
+    ws['A12'] = "Incidenza PDL Autorizzati su Totale PDL"
+    ws['B10'] = list_of_sum[4]
+    ws['B11'] = list_of_sum[5]
+
+    ws['A16'] = "Incidenza Check PDL su PDL Protocollati:"
+    ws['A17'] = "Incidenza Check PDL su PDL Autorizzati:"
+    ws['B16'] = '{:.2%}'.format(sum(list_of_sum[:4]) / list_of_sum[4])
+    if list_of_sum[5] == 0:
+        ws['B12'] = "N/D"
+        ws['B17'] = "N/D"
+    else:
+        ws['B12'] = '{:.2%}'.format(list_of_sum[5] / list_of_sum[4])
+        ws['B17'] = '{:.2%}'.format(sum(list_of_sum[:4]) / list_of_sum[5])
+    ws['A16'].font = Font(bold=True)  # Set A1 to bold
+    ws['A17'].font = Font(bold=True)  # Set A1 to bold
+    ws['B16'].font = Font(bold=True)  # Set A1 to bold
+    ws['B17'].font = Font(bold=True)  # Set A1 to bold
+
+     # Set bold for specific cells
+    for cell in ['A1', 'A6', 'A12', 'A16', 'A17', 'B1', 'B6', 'B12', 'B16', 'B17']:
+        ws[cell].font = Font(bold=True)
+
+    utilities.autosize_and_center_columns(ws)
+
+    # Move the sheet to the first position
+    wb.move_sheet(ws, offset=-6)
+
+
+def define_report_anomalies_part(wb):
+    ws = wb.create_sheet(title="Dettagli Anomalie")
+
+
+
 def create_excel_output(output_file):
     wb = Workbook()
     #Outcome of Check PDL
@@ -247,7 +257,8 @@ def create_excel_output(output_file):
     define_report_pdl_part(constants.PDL_PROT, 'Tipologia Attività', wb, "PDL-Protocollati")
     #Outcome of PDL Aut
     define_report_pdl_part(constants.PDL_AUT, 'Tipologia Attività', wb, "PDL-Autorizzati")
-    define_report_summary_part(wb)
+    #define_report_summary_part(wb)
+    #define_report_anomalies_part(wb)
     # Rimuovi il foglio di lavoro predefinito
     wb.remove(wb.active)
     # Salva il Workbook completo in un file Excel
